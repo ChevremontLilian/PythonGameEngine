@@ -1,7 +1,7 @@
-from kandinsky import fill_rect
+from kandinsky import fill_rect, get_pixel
 from math import sin, pi
-from time import sleep
-
+from time import sleep, monotonic
+from ion import *
 
 class Sprite:
     def __init__(self, image: str, x: int = 0, y: int = 0, w: int = 0, h: int = 0):
@@ -130,7 +130,8 @@ class Canva:
             # self.mat est indexé [y][x], pas [x][y]
             for x, y, color in used:
                 if 0 <= y < len(self.mat) and 0 <= x < len(self.mat[0]):
-                    self.mat[y][x] = color  # On vérifie aussi qu'on ne sort pas des bornes
+                    if self.mat[y][x] != color:
+                        self.mat[y][x] = color  # On vérifie aussi qu'on ne sort pas des bornes
 
     def drawScreen(self):
         """
@@ -140,25 +141,79 @@ class Canva:
         for y in range(len(self.mat)):
             for x in range(len(self.mat[y])):
                 color = self.mat[y][x]
-                if color is not None:
-                    # les axes x et y étaient inversés dans len()
+                if color is not None and self.mat[y][x] != get_pixel(x * self.size, y * self.size):  # On peut aussi choisir de ne pas dessiner les pixels noirs
                     fill_rect(x * self.size, y * self.size, self.size, self.size, color)
 
+class GameEngine:
+    def __init__(self,height,width,size,player=None,collision = True):
+        self.screen = Canva(height, width, size)
+        self.player = player
+        self.collision = collision
+    def addPlayer(self, player):
+        self.player = player
+    
+    def removePlayer(self):
+        self.player = None
+    
+    def update(self):
+        self.screen.genScreen()
+        self.screen.drawScreen()
 
-# --- Initialisation ---
-background = "8" * 24 * 32
+    def mainLoop(self,condition,updateDelay=0.1,Scripts=None):
+        start = monotonic()
+        frameCount = 0
+        while True:
+            if condition:
+                break
+            else:
+                try:
+                    for Script in Scripts:
+                        Script.run()
+                except:
+                    pass
+                self.update()
+                frameCount += 1
+                elapsed = monotonic() - start
+                print(f"fps {frameCount/elapsed:.2f}")
+                sleep(updateDelay)
+
+class GravityScript:
+    def __init__(self,sprite):
+        self.counter = 0
+        self.sprite = sprite
+        self.climb = 0
+        self.gravityStrength = 1
+
+    def run(self):
+        if keydown(KEY_UP) and self.sprite.y >= 16:
+            self.climb += 4
+            self.sprite.y -= self.gravityStrength
+        elif self.climb > 0:
+            self.sprite.y -= self.gravityStrength
+            self.climb -= 1
+        elif self.sprite.y < 16 and self.climb <= 0:
+            self.sprite.y += self.gravityStrength
+        else:
+            pass
+        print(self.climb)
+
+class MoveScript:
+    def __init__(self,sprite):
+        self.sprite = sprite
+
+    def run(self):
+        if keydown(KEY_LEFT) and self.sprite.x >= 0:
+            self.sprite.x -= 1
+        if keydown(KEY_RIGHT) and self.sprite.x <= 240 - self.sprite.w:
+            self.sprite.x += 1    
+
+# ---- exemple ----
+background = (("9" * 23 * 32 ))
 backgroundSprite = Sprite(background, 0, 0, 32, 24)
-animation_1 = [["9298929", "9928992", "9928992", "9298929",
-                 "9298929", "2998299", "2998299", "9298929"]]
-sprite_animated_1 = AnimatedSprite(animation_1, 16, 8, 7, 1)
-g = Canva(240, 320, 10)
-
-# on ajoute backgroundSprite (l'objet), pas background (la chaîne)
-g.addSprite(backgroundSprite)
-g.addSprite(sprite_animated_1)
-
-# Boucle principale
-while True:
-    g.genScreen()
-    g.drawScreen()
-    sleep(0.1)
+animation_1 = "9"
+sprite_animated_1 = Sprite(animation_1, 0, 0, 1, 2)
+g = GameEngine(220, 320, 10)
+Scripts = [GravityScript(sprite_animated_1), MoveScript(sprite_animated_1)]
+g.screen.addSprite(backgroundSprite)
+g.screen.addSprite(sprite_animated_1)
+g.mainLoop(keydown(KEY_BACKSPACE),0,Scripts)
