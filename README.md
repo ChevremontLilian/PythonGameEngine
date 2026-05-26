@@ -14,7 +14,7 @@ Il permet :
 Le moteur est conçu pour **limiter l’usage mémoire** et **éviter les appels C coûteux** (`get_pixel`) mais ne permet tout de même pas de créer un jeu compliqué dessus, il est sert de base. 
 N'hésitez pas à le modifier !
 
-Le but ici **n'est pas de créer un moteur de jeu en tant que tel** mais de comprendre **comment optimiser un programme python avec des structures de données adaptés**.
+Le but ici **n'est pas de créer un moteur de jeu en tant que tel** mais de comprendre **comment optimiser un programme python avec des structures de données adaptées**.
 
 /!\ ***Attention***, les attributs sont tous publiques, c'est fait pour pouvoir les modifier dans le code d'exemple si celui-ci est à part. Suivant vos besoins modifiez ceci.
 
